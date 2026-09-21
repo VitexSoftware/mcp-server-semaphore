@@ -35,3 +35,10 @@ debian/semaphore-mcp-server.prerm.debhelper
 debian/semaphore-mcp-server/
 debian/semaphore-mcp-server.substvars
 debian/debhelper-build-stamp
+debian/mcp-server-*/
+debian/mcprack-mcp-server-*/
+debian/*.debhelper*
+debian/*.substvars
+debian/files
+debian/debhelper-build-stamp
+debian/.debhelper/

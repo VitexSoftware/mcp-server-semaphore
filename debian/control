@@ -1,4 +1,4 @@
-Source: semaphore-mcp-server
+Source: mcp-server-semaphore
 Section: python
 Priority: optional
 Maintainer: Vítězslav Dvořák <info@vitexsoftware.cz>
@@ -9,12 +9,12 @@ Build-Depends:
  python3-all,
  python3-setuptools,
 Standards-Version: 4.7.0
-Homepage: https://github.com/VitexSoftware/semaphore-mcp-server
+Homepage: https://github.com/VitexSoftware/mcp-server-semaphore
 Rules-Requires-Root: no
-Vcs-Git: https://github.com/VitexSoftware/semaphore-mcp-server.git
-Vcs-Browser: https://github.com/VitexSoftware/semaphore-mcp-server
+Vcs-Git: https://github.com/VitexSoftware/mcp-server-semaphore.git
+Vcs-Browser: https://github.com/VitexSoftware/mcp-server-semaphore
 
-Package: semaphore-mcp-server
+Package: mcp-server-semaphore
 Architecture: all
 Depends:
  ${misc:Depends},
@@ -22,6 +22,9 @@ Depends:
  python3-fastmcp (>= 2.0.0),
  python3-semaphore-client,
  python3-dotenv (>= 1.0.0),
+Provides: semaphore-mcp-server
+Replaces: semaphore-mcp-server (<< 0.1.3~)
+Breaks: semaphore-mcp-server (<< 0.1.3~)
 Description: Model Context Protocol server for Semaphore UI integration
  A comprehensive MCP server providing complete access to Semaphore UI API
  functionality through the Model Context Protocol, enabling AI assistants
@@ -41,8 +44,8 @@ Architecture: all
 Depends:
  ${misc:Depends},
  mcprack (>= 1.5.1),
- semaphore-mcp-server (= ${binary:Version}),
+ mcp-server-semaphore (= ${binary:Version}),
 Description: Registers Semaphore UI MCP server into mcprack catalog
- Companion package for semaphore-mcp-server. Installing it registers
+ Companion package for mcp-server-semaphore. Installing it registers
  the semaphore-mcp binary as an available MCP server in the local
  mcprack instance; removing it unregisters it again.

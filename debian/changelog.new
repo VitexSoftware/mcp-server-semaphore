@@ -11,16 +11,6 @@ mcp-server-semaphore (0.1.3-1) unstable; urgency=medium
 
  -- Vítězslav Dvořák <info@vitexsoftware.cz>  Mon, 21 Sep 2026 15:45:00 +0200
 
-semaphore-mcp-server (0.1.2) UNRELEASED; urgency=medium
-
-  * Add MCP tool annotations (readOnlyHint / destructiveHint) for all 37 tools.
-  * Fix environment tools to use VariableGroupApi (ProjectApi had no env methods).
-  * Fix schedule_list and key_get via raw ApiClient GET (missing in generated client).
-  * Pass sort/order to environment_list as required by the Semaphore API.
-  * Add tests/live_capability_scenario.py for live read + READ_ONLY write guards.
-
- -- Vítězslav Dvořák <info@vitexsoftware.cz>  Mon, 21 Sep 2026 11:33:00 +0200
-
 semaphore-mcp-server (0.1.0) UNRELEASED; urgency=low
 
   * Initial release. Closes: #nnnn

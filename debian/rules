@@ -6,4 +6,4 @@ export PYBUILD_NAME=semaphore-mcp-server
 	dh $@ --with python3 --buildsystem=pybuild
 
 override_dh_auto_install:
-	dh_auto_install --destdir=debian/semaphore-mcp-server
+	dh_auto_install --destdir=debian/mcp-server-semaphore
