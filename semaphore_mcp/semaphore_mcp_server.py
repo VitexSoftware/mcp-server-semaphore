@@ -38,8 +38,8 @@ from semaphore_client.semaphore.inventory_api import InventoryApi
 from semaphore_client.semaphore.repository_api import RepositoryApi
 from semaphore_client.semaphore.schedule_api import ScheduleApi
 from semaphore_client.semaphore.user_api import UserApi
-from semaphore_client.semaphore.integration_api import IntegrationApi
 from semaphore_client.semaphore.key_store_api import KeyStoreApi
+from semaphore_client.semaphore.variable_group_api import VariableGroupApi
 from semaphore_client.semaphore.default_api import DefaultApi
 from semaphore_client.models.project_request import ProjectRequest
 from semaphore_client.models.template_request import TemplateRequest
@@ -63,6 +63,26 @@ logger = logging.getLogger(__name__)
 
 # Initialize FastMCP
 mcp = FastMCP("Semaphore MCP Server")
+
+# MCP tool annotations (hints for clients / capability audits)
+_RO_ANN = {
+    "readOnlyHint": True,
+    "destructiveHint": False,
+    "idempotentHint": True,
+    "openWorldHint": True,
+}
+_RW_ANN = {
+    "readOnlyHint": False,
+    "destructiveHint": False,
+    "idempotentHint": False,
+    "openWorldHint": True,
+}
+_DEL_ANN = {
+    "readOnlyHint": False,
+    "destructiveHint": True,
+    "idempotentHint": True,
+    "openWorldHint": True,
+}
 
 # Global API client
 _api_client: Optional[ApiClient] = None
@@ -133,12 +153,47 @@ def format_response(data: Any) -> str:
     return json.dumps(data, indent=2, default=str)
 
 
+def _client_get(
+    client: ApiClient,
+    resource_path: str,
+    path_params: Dict[str, Any],
+    response_type: str,
+) -> Any:
+    """GET via ApiClient for endpoints missing from the generated API classes.
+
+    python-semaphore-client 2.16.14 omits a few live Semaphore routes (notably
+    schedule list and single-key GET). This helper fills those gaps without
+    forking the generated client.
+    """
+    header_params: Dict[str, Optional[str]] = {"Accept": "application/json"}
+    param = client.param_serialize(
+        method="GET",
+        resource_path=resource_path,
+        path_params=path_params,
+        query_params=[],
+        header_params=header_params,
+        body=None,
+        post_params=[],
+        files={},
+        auth_settings=["bearer"],
+        collection_formats={},
+        _host=None,
+        _request_auth=None,
+    )
+    response_data = client.call_api(*param)
+    response_data.read()
+    return client.response_deserialize(
+        response_data=response_data,
+        response_types_map={"200": response_type},
+    ).data
+
+
 # ============================================================================
 # PROJECT MANAGEMENT
 # ============================================================================
 
 
-@mcp.tool()
+@mcp.tool(annotations=_RO_ANN)
 def project_list() -> str:
     """List all projects accessible to the current user.
 
@@ -151,7 +206,7 @@ def project_list() -> str:
     return format_response(projects)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_RO_ANN)
 def project_get(project_id: int) -> str:
     """Get details of a specific project.
 
@@ -167,7 +222,7 @@ def project_get(project_id: int) -> str:
     return format_response(project)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_RW_ANN)
 def project_create(name: str, alert: bool = False, max_parallel_tasks: int = 0) -> str:
     """Create a new project.
 
@@ -191,7 +246,7 @@ def project_create(name: str, alert: bool = False, max_parallel_tasks: int = 0) 
     return format_response(project)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_DEL_ANN)
 def project_delete(project_id: int) -> str:
     """Delete a project.
 
@@ -213,7 +268,7 @@ def project_delete(project_id: int) -> str:
 # ============================================================================
 
 
-@mcp.tool()
+@mcp.tool(annotations=_RO_ANN)
 def task_list(project_id: int) -> str:
     """List all tasks in a project.
 
@@ -229,7 +284,7 @@ def task_list(project_id: int) -> str:
     return format_response(tasks)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_RO_ANN)
 def task_get(project_id: int, task_id: int) -> str:
     """Get details of a specific task.
 
@@ -248,7 +303,7 @@ def task_get(project_id: int, task_id: int) -> str:
     return format_response(task)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_RW_ANN)
 def task_launch(
     project_id: int,
     template_id: int,
@@ -287,7 +342,7 @@ def task_launch(
     return format_response(task)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_RW_ANN)
 def task_stop(project_id: int, task_id: int) -> str:
     """Stop a running task.
 
@@ -307,7 +362,7 @@ def task_stop(project_id: int, task_id: int) -> str:
     return json.dumps({"status": "stopped", "task_id": task_id})
 
 
-@mcp.tool()
+@mcp.tool(annotations=_RO_ANN)
 def task_output(project_id: int, task_id: int) -> str:
     """Get the output log of a task.
 
@@ -326,7 +381,7 @@ def task_output(project_id: int, task_id: int) -> str:
     return format_response(output)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_DEL_ANN)
 def task_delete(project_id: int, task_id: int) -> str:
     """Delete a task.
 
@@ -351,7 +406,7 @@ def task_delete(project_id: int, task_id: int) -> str:
 # ============================================================================
 
 
-@mcp.tool()
+@mcp.tool(annotations=_RO_ANN)
 def template_list(
     project_id: int, sort: str = "name", order: str = "asc"
 ) -> str:
@@ -373,7 +428,7 @@ def template_list(
     return format_response(templates)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_RO_ANN)
 def template_get(project_id: int, template_id: int) -> str:
     """Get details of a specific template.
 
@@ -392,7 +447,7 @@ def template_get(project_id: int, template_id: int) -> str:
     return format_response(template)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_RW_ANN)
 def template_create(
     project_id: int,
     name: str,
@@ -446,7 +501,7 @@ def template_create(
     return format_response(template)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_DEL_ANN)
 def template_delete(project_id: int, template_id: int) -> str:
     """Delete a template.
 
@@ -471,7 +526,7 @@ def template_delete(project_id: int, template_id: int) -> str:
 # ============================================================================
 
 
-@mcp.tool()
+@mcp.tool(annotations=_RO_ANN)
 def inventory_list(
     project_id: int, sort: str = "name", order: str = "asc"
 ) -> str:
@@ -493,7 +548,7 @@ def inventory_list(
     return format_response(inventories)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_RO_ANN)
 def inventory_get(project_id: int, inventory_id: int) -> str:
     """Get details of a specific inventory.
 
@@ -512,7 +567,7 @@ def inventory_get(project_id: int, inventory_id: int) -> str:
     return format_response(inventory)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_RW_ANN)
 def inventory_create(
     project_id: int,
     name: str,
@@ -551,7 +606,7 @@ def inventory_create(
     return format_response(result)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_DEL_ANN)
 def inventory_delete(project_id: int, inventory_id: int) -> str:
     """Delete an inventory.
 
@@ -576,7 +631,7 @@ def inventory_delete(project_id: int, inventory_id: int) -> str:
 # ============================================================================
 
 
-@mcp.tool()
+@mcp.tool(annotations=_RO_ANN)
 def repository_list(
     project_id: int, sort: str = "name", order: str = "asc"
 ) -> str:
@@ -598,7 +653,7 @@ def repository_list(
     return format_response(repos)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_RO_ANN)
 def repository_get(project_id: int, repository_id: int) -> str:
     """Get details of a specific repository.
 
@@ -617,7 +672,7 @@ def repository_get(project_id: int, repository_id: int) -> str:
     return format_response(repo)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_RW_ANN)
 def repository_create(
     project_id: int,
     name: str,
@@ -653,7 +708,7 @@ def repository_create(
     return format_response(repo)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_DEL_ANN)
 def repository_delete(project_id: int, repository_id: int) -> str:
     """Delete a repository.
 
@@ -678,23 +733,29 @@ def repository_delete(project_id: int, repository_id: int) -> str:
 # ============================================================================
 
 
-@mcp.tool()
-def environment_list(project_id: int) -> str:
+@mcp.tool(annotations=_RO_ANN)
+def environment_list(
+    project_id: int, sort: str = "name", order: str = "asc"
+) -> str:
     """List all environments in a project.
 
     Args:
         project_id: The ID of the project.
+        sort: Field to sort by.
+        order: Sort order (asc or desc).
 
     Returns:
         JSON list of environments.
     """
     client = get_api_client()
-    api = ProjectApi(client)
-    environments = api.project_project_id_environment_get(project_id=project_id)
+    api = VariableGroupApi(client)
+    environments = api.project_project_id_environment_get(
+        project_id=project_id, sort=sort, order=order
+    )
     return format_response(environments)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_RO_ANN)
 def environment_get(project_id: int, environment_id: int) -> str:
     """Get details of a specific environment.
 
@@ -706,14 +767,14 @@ def environment_get(project_id: int, environment_id: int) -> str:
         JSON object with environment details.
     """
     client = get_api_client()
-    api = ProjectApi(client)
+    api = VariableGroupApi(client)
     env = api.project_project_id_environment_environment_id_get(
         project_id=project_id, environment_id=environment_id
     )
     return format_response(env)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_RW_ANN)
 def environment_create(
     project_id: int,
     name: str,
@@ -733,7 +794,7 @@ def environment_create(
     """
     validate_read_only()
     client = get_api_client()
-    api = ProjectApi(client)
+    api = VariableGroupApi(client)
     request = EnvironmentRequest(
         name=name,
         json=json_data,
@@ -746,7 +807,7 @@ def environment_create(
     return format_response(env)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_DEL_ANN)
 def environment_delete(project_id: int, environment_id: int) -> str:
     """Delete an environment.
 
@@ -759,7 +820,7 @@ def environment_delete(project_id: int, environment_id: int) -> str:
     """
     validate_read_only()
     client = get_api_client()
-    api = ProjectApi(client)
+    api = VariableGroupApi(client)
     api.project_project_id_environment_environment_id_delete(
         project_id=project_id, environment_id=environment_id
     )
@@ -771,7 +832,7 @@ def environment_delete(project_id: int, environment_id: int) -> str:
 # ============================================================================
 
 
-@mcp.tool()
+@mcp.tool(annotations=_RO_ANN)
 def key_list(project_id: int, sort: str = "name", order: str = "asc") -> str:
     """List all keys (credentials) in a project.
 
@@ -791,7 +852,7 @@ def key_list(project_id: int, sort: str = "name", order: str = "asc") -> str:
     return format_response(keys)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_RO_ANN)
 def key_get(project_id: int, key_id: int) -> str:
     """Get details of a specific key.
 
@@ -803,14 +864,17 @@ def key_get(project_id: int, key_id: int) -> str:
         JSON object with key details.
     """
     client = get_api_client()
-    api = KeyStoreApi(client)
-    key = api.project_project_id_keys_key_id_get(
-        project_id=project_id, key_id=key_id
+    # Generated KeyStoreApi has list/create/update/delete but no single-key GET.
+    key = _client_get(
+        client,
+        "/project/{project_id}/keys/{key_id}",
+        {"project_id": project_id, "key_id": key_id},
+        "AccessKey",
     )
     return format_response(key)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_DEL_ANN)
 def key_delete(project_id: int, key_id: int) -> str:
     """Delete a key.
 
@@ -835,7 +899,7 @@ def key_delete(project_id: int, key_id: int) -> str:
 # ============================================================================
 
 
-@mcp.tool()
+@mcp.tool(annotations=_RO_ANN)
 def schedule_list(project_id: int) -> str:
     """List all schedules in a project.
 
@@ -846,12 +910,17 @@ def schedule_list(project_id: int) -> str:
         JSON list of schedules.
     """
     client = get_api_client()
-    api = ScheduleApi(client)
-    schedules = api.project_project_id_schedules_get(project_id=project_id)
+    # Generated ScheduleApi exposes create/get-by-id/update/delete but not list.
+    schedules = _client_get(
+        client,
+        "/project/{project_id}/schedules",
+        {"project_id": project_id},
+        "List[Schedule]",
+    )
     return format_response(schedules)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_RW_ANN)
 def schedule_create(
     project_id: int,
     template_id: int,
@@ -884,7 +953,7 @@ def schedule_create(
     return format_response(schedule)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_DEL_ANN)
 def schedule_delete(project_id: int, schedule_id: int) -> str:
     """Delete a schedule.
 
@@ -909,7 +978,7 @@ def schedule_delete(project_id: int, schedule_id: int) -> str:
 # ============================================================================
 
 
-@mcp.tool()
+@mcp.tool(annotations=_RO_ANN)
 def user_get_current() -> str:
     """Get the current authenticated user's information.
 
@@ -922,7 +991,7 @@ def user_get_current() -> str:
     return format_response(user)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_RO_ANN)
 def user_tokens() -> str:
     """List API tokens for the current user.
 
@@ -940,7 +1009,7 @@ def user_tokens() -> str:
 # ============================================================================
 
 
-@mcp.tool()
+@mcp.tool(annotations=_RO_ANN)
 def event_list(project_id: int) -> str:
     """List events for a project.
 
@@ -961,7 +1030,7 @@ def event_list(project_id: int) -> str:
 # ============================================================================
 
 
-@mcp.tool()
+@mcp.tool(annotations=_RO_ANN)
 def server_info() -> str:
     """Get Semaphore server information (version, configuration).
 
@@ -974,7 +1043,7 @@ def server_info() -> str:
     return format_response(info)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_RO_ANN)
 def server_ping() -> str:
     """Ping the Semaphore server to check connectivity.
 

@@ -36,6 +36,11 @@
     <name>Vítězslav Dvořák</name>
   </developer>
   <releases>
+    <release version="0.1.2" date="2026-09-21">
+      <description>
+        <p>Live capability audit fixes: VariableGroupApi for environments, raw GET for schedule list and key get, MCP tool annotations, live scenario test.</p>
+      </description>
+    </release>
     <release version="0.1.0" date="2025-05-03">
       <description>
         <p>Initial release with 35 tools covering full Semaphore UI API.</p>

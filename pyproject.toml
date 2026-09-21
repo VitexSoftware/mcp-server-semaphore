@@ -1,6 +1,6 @@
 [project]
 name = "semaphore-mcp-server"
-version = "0.1.1"
+version = "0.1.2"
 description = "A comprehensive MCP server for Semaphore UI integration"
 readme = "README.md"
 license = {text = "MIT"}

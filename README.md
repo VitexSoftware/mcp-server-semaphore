@@ -117,45 +117,51 @@ Or for Claude Desktop (`claude_desktop_config.json`):
 
 ## Available Tools
 
-| Tool | Description |
-|------|-------------|
-| `project_list` | List all projects |
-| `project_get` | Get project details |
-| `project_create` | Create a new project |
-| `project_delete` | Delete a project |
-| `task_list` | List tasks in a project |
-| `task_get` | Get task details |
-| `task_launch` | Launch a task from a template |
-| `task_stop` | Stop a running task |
-| `task_output` | Get task output/log |
-| `task_delete` | Delete a task |
-| `template_list` | List templates in a project |
-| `template_get` | Get template details |
-| `template_create` | Create a new template |
-| `template_delete` | Delete a template |
-| `inventory_list` | List inventories in a project |
-| `inventory_get` | Get inventory details |
-| `inventory_create` | Create a new inventory |
-| `inventory_delete` | Delete an inventory |
-| `repository_list` | List repositories in a project |
-| `repository_get` | Get repository details |
-| `repository_create` | Create a new repository |
-| `repository_delete` | Delete a repository |
-| `environment_list` | List environments in a project |
-| `environment_get` | Get environment details |
-| `environment_create` | Create a new environment |
-| `environment_delete` | Delete an environment |
-| `key_list` | List keys/credentials in a project |
-| `key_get` | Get key details |
-| `key_delete` | Delete a key |
-| `schedule_list` | List schedules in a project |
-| `schedule_create` | Create a new schedule |
-| `schedule_delete` | Delete a schedule |
-| `user_get_current` | Get current user info |
-| `user_tokens` | List user API tokens |
-| `event_list` | List project events |
-| `server_info` | Get server version/info |
-| `server_ping` | Check server connectivity |
+Tools declare MCP annotations (`readOnlyHint`, `destructiveHint`, …). Write tools
+call `validate_read_only()` and refuse when `READ_ONLY=true` (default).
+
+| Tool | Description | Mode |
+|------|-------------|------|
+| `project_list` | List all projects | read |
+| `project_get` | Get project details | read |
+| `project_create` | Create a new project | write |
+| `project_delete` | Delete a project | write |
+| `task_list` | List tasks in a project | read |
+| `task_get` | Get task details | read |
+| `task_launch` | Launch a task from a template | write |
+| `task_stop` | Stop a running task | write |
+| `task_output` | Get task output/log | read |
+| `task_delete` | Delete a task | write |
+| `template_list` | List templates in a project | read |
+| `template_get` | Get template details | read |
+| `template_create` | Create a new template | write |
+| `template_delete` | Delete a template | write |
+| `inventory_list` | List inventories in a project | read |
+| `inventory_get` | Get inventory details | read |
+| `inventory_create` | Create a new inventory | write |
+| `inventory_delete` | Delete an inventory | write |
+| `repository_list` | List repositories in a project | read |
+| `repository_get` | Get repository details | read |
+| `repository_create` | Create a new repository | write |
+| `repository_delete` | Delete a repository | write |
+| `environment_list` | List environments in a project | read |
+| `environment_get` | Get environment details | read |
+| `environment_create` | Create a new environment | write |
+| `environment_delete` | Delete an environment | write |
+| `key_list` | List keys/credentials in a project | read |
+| `key_get` | Get key details | read |
+| `key_delete` | Delete a key | write |
+| `schedule_list` | List schedules in a project | read |
+| `schedule_create` | Create a new schedule | write |
+| `schedule_delete` | Delete a schedule | write |
+| `user_get_current` | Get current user info | read |
+| `user_tokens` | List user API tokens | read |
+| `event_list` | List project events | read |
+| `server_info` | Get server version/info | read |
+| `server_ping` | Check server connectivity | read |
+
+When `READ_ONLY=true` (default), create/update/delete/launch/stop tools raise a
+clear error. Set `READ_ONLY=false` to allow mutating operations.
 
 ## Dependencies
 
@@ -168,8 +174,30 @@ This project uses [python3-semaphore-client](https://github.com/VitexSoftware/py
 pip install -e ".[dev]"
 
 # Run directly
-python -m src.semaphore_mcp_server
+python -m semaphore_mcp.semaphore_mcp_server
 ```
+
+### Live capability scenario
+
+Exercises every read tool against a real Semaphore instance and verifies that
+write tools refuse under `READ_ONLY=true`:
+
+```bash
+SEMAPHORE_URL=https://semaphore.example.com \
+SEMAPHORE_TOKEN=... READ_ONLY=true \
+  python tests/live_capability_scenario.py --json-out /tmp/semaphore-live.json
+```
+
+Or with CLI flags:
+
+```bash
+python tests/live_capability_scenario.py \
+  --url https://semaphore.example.com \
+  --token "$SEMAPHORE_TOKEN" \
+  --json-out /tmp/semaphore-live.json
+```
+
+Exit code is non-zero when any non-skipped check fails.
 
 ## License
 
