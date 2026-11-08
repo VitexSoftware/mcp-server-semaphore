@@ -43,7 +43,7 @@ Package: mcprack-mcp-server-semaphore
 Architecture: all
 Depends:
  ${misc:Depends},
- mcprack (>= 1.5.1),
+ mcprack (>= 1.6.0),
  mcp-server-semaphore (= ${binary:Version}),
 Description: Registers Semaphore UI MCP server into mcprack catalog
  Companion package for mcp-server-semaphore. Installing it registers
